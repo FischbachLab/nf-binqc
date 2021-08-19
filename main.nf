@@ -48,6 +48,7 @@ Channel
   .ifEmpty { exit 1, "Cannot find matching fasta file" }
 
 def output_base = "${params.outdir}/${params.project}"
+
 /* 
   Since the processes are not dependent upon each other, duplicate the channel 
   such that there is one channel for each process
@@ -57,20 +58,10 @@ Channel
     .map { file -> [file.baseName, file] }
     .into {seqkit_ch; barrnap_ch}
 
-// Channel
-//     .fromPath("${params.fastas}", type:'dir')
-//     into{checkm_ch}
-
-checkm_ch = Channel.value("${params.fastas}")
-
-
-// Channel
-//     .fromPath(params.fastas, type : 'dir')
-//     // .into {seqkit_ch; gtdbtk_ch; checkm_ch; barrnap_ch; pgap_ch}
-//     .into {gtdbtk_ch; checkm_ch}
+bindir_ch = Channel.value("${params.fastas}")
 
 process SEQKIT {
-  tag "Genome Stats: ${id}"
+  tag "${id}"
 
   cpus 2
   memory 4.GB
@@ -83,7 +74,7 @@ process SEQKIT {
 
   output:
     path "${id}.seqkit_stats.txt"
-    // path '*.version.txt' to versions_ch
+    // path "*.version.txt" to versions_ch
 
   script:
   """
@@ -98,63 +89,68 @@ process SEQKIT {
 
 // TODO @sunitj: Takes and Emits a directory
 // process GTDBTK {
-//   tag "Genome Stats: ${assembly.baseName}"
+//     tag "Running"
 
-//   cpus 2
-//   memory 8.GB
-//   // TODO @sunitj: Will need to create a new docker with a different entrypoint
-//   container "quay.io/biocontainers/seqkit:0.12.0--0"
+//     cpus 4
+//     memory 40.GB
+//     container "quay.io/biocontainers/gtdbtk:1.5.1--pyhdfd78af_0"
 
-//   publishDir "$output_base/GTDBtk/"
+//     publishDir "$output_base/GTDBtk/"
 
-// input:
-//     tuple val(meta), path("bins/*")
-//     tuple val(db_name), path("database/*")
+//     input:
+//         path(assembly_dir) from bindir_ch
 
-// output:
-// path "gtdbtk.${meta.assembler}-${meta.id}.*.summary.tsv"        , emit: summary
-// path "gtdbtk.${meta.assembler}-${meta.id}.*.classify.tree.gz"   , emit: tree
-// path "gtdbtk.${meta.assembler}-${meta.id}.*.markers_summary.tsv", emit: markers
-// path "gtdbtk.${meta.assembler}-${meta.id}.*.msa.fasta.gz"       , emit: msa
-// path "gtdbtk.${meta.assembler}-${meta.id}.*.user_msa.fasta"     , emit: user_msa
-// path "gtdbtk.${meta.assembler}-${meta.id}.*.filtered.tsv"       , emit: filtered
-// path "gtdbtk.${meta.assembler}-${meta.id}.log"                  , emit: log
-// path "gtdbtk.${meta.assembler}-${meta.id}.warnings.log"         , emit: warnings
-// path "gtdbtk.${meta.assembler}-${meta.id}.failed_genomes.tsv"   , emit: failed
-// path '*.version.txt'                                            , emit: version
+//     output:
+//         path "gtdbtk.${params.project}.*.summary.tsv"        
+//         path "gtdbtk.${params.project}.*.classify.tree.gz"   
+//         path "gtdbtk.${params.project}.*.markers_summary.tsv"
+//         path "gtdbtk.${params.project}.*.msa.fasta.gz"       
+//         path "gtdbtk.${params.project}.*.user_msa.fasta"     
+//         path "gtdbtk.${params.project}.*.filtered.tsv"       
+//         path "gtdbtk.log"                  
+//         path "gtdbtk.warnings.log"         
+//         path "gtdbtk.${params.project}.failed_genomes.tsv"   
+//         path "*.version.txt"
 
-//   script:
-//   """
-//   classify_wf \\
-//     --cpus $task.cpus \\
+//     script:
+//     """
+//     export GTDBTK_DATA_PATH="${params.gtdb_db}"
+//     mkdir -p pplacer_tmp/${params.project}
+
+//     gtdbtk classify_wf \\
+//     --genome_dir ${assembly_dir.baseName} \\ 
 //     --extension ${params.ext} \\
-//     --genome_dir $bin_dir \\ ## TODO: This is run on an entire directory!!!
-//     --out_dir  ## TODO: This outputs an entire directory!!!
-//   """
+//     --prefix gtdb.${params.project}
+//     --out_dir "\${PWD}"
+//     --cpus $task.cpus \\
+//     --pplacer_cpus ${params.pplacer_threads} \\
+//     --scratch_dir pplacer_tmp/${params.project}
+
+//     gzip "gtdbtk.${params.project}".*.classify.tree "gtdbtk.${params.project}".*.msa.fasta
+//     gtdbtk --version | sed "s/gtdbtk: version //; s/ Copyright.*//" > gtdbtk.version.txt
+//     """
 // }
 
 // TODO @sunitj: Takes and Emits a directory
 process CHECKM {
-    tag "Running CheckM"
+    tag "Running"
 
-    cpus 4
+    cpus 8
     memory 40.GB
     container "quay.io/biocontainers/checkm-genome:1.1.3--py_1"
 
     publishDir "$output_base/CheckM/"
 
     input:
-        path(assembly_dir) from checkm_ch
+        path(assembly_dir) from bindir_ch
 
     output:
-        path "checkm.tsv"
-        path "checkm_output.tar.gz"
-        // path '*.version.txt' to versions_ch
+        path "checkm-${params.project}.tsv"
+        path "checkm-${params.project}/*"
+        // path "*.version.txt" to versions_ch
 // aws s3 cp ${assembly_dir}/ bins/ --exclude '*' --include '*'${params.ext}
   script:
   """
-  ls -lhtra
-  
   checkm data setRoot ${params.checkm_db}
   checkm \\
     lineage_wf \\
@@ -164,18 +160,17 @@ process CHECKM {
       -t $task.cpus \\
       -x ${params.ext} \\
       --pplacer_threads ${params.pplacer_threads} \\
-      -f checkm.tsv \\
-      . \\
-      checkm_output
+      -f checkm-${params.project}.tsv \\
+      ${assembly_dir.baseName} \\
+      checkm-${params.project}
 
-  tar czf checkm_output.tar.gz checkm_output
+  ls -lhtra checkm-${params.project}/
   """
-//   checkm | head -n 2 | sed "/^$/d" | cut -d : -f 4 | sed "s/^ //" > checkm.version.txt
 }
 
 // Extract rRNA
 process BARRNAP {
-  tag "Extracting 16S for: ${id}"
+  tag "${id}"
 
   cpus 2
   memory 4.GB
@@ -189,7 +184,7 @@ process BARRNAP {
   output:
     path "${id}.rrna.gff"
     path "${id}.rrna.${params.ext}"
-    // path '*.version.txt' to versions_ch
+    // path "*.version.txt" to versions_ch
 
   script:
   """
