@@ -76,7 +76,7 @@ process SEQKIT {
 
   container params.docker_container_seqkit
 
-  publishDir "$outputBase/01_SeqKit/${id}"
+  publishDir "$outputBase/01_Stats/${id}"
 
   input:
     tuple val(id), path(assembly) from seqkit_ch
@@ -84,6 +84,7 @@ process SEQKIT {
   output:
     path "${id}.seqkit_stats.txt"
     path "*.version.txt"
+    path "${id}.sha256"
 
   script:
   """
@@ -93,6 +94,8 @@ process SEQKIT {
     -j $task.cpus \\
     $assembly 1> ${id}.seqkit_stats.txt
   seqkit version > seqkit.version.txt
+
+  sha256sum $assembly &> ${id}.sha256
   """
 }
 
@@ -102,7 +105,7 @@ process BARRNAP {
 
   container params.docker_container_barrnap
 
-  publishDir "$outputBase/02_Barrnap/${id}"
+  publishDir "$outputBase/02_RRNA/${id}"
 
   input:
     tuple val(id), path(assembly) from barrnap_ch
@@ -127,7 +130,7 @@ process CHECKM {
 
   container params.docker_container_checkm
 
-  publishDir "$outputBase/03_CheckM"
+  publishDir "$outputBase/03_Contamination"
 
   input:
     path(assembly_dir) from checkm_bindir_ch
@@ -171,7 +174,7 @@ process GTDBTK {
 
     container params.docker_container_gtdbtk
 
-    publishDir "$outputBase/04_GTDBtk"
+    publishDir "$outputBase/04_Classification"
 
     input:
       path(assembly_dir) from gtdb_bindir_ch
@@ -216,3 +219,6 @@ process GTDBTK {
 // // Collect versions; concatenate files; remove duplicates; save
 // versions_ch
 //     .collectFile(name: out)
+
+// TODO: @sunitj
+// replicate bin/qc_wrapper.sh as a Nextflow pipeline 
