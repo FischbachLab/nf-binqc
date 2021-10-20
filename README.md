@@ -1,6 +1,8 @@
 NF-BINQC
 ====================
 
+## Test 
+
 ```bash
 aws batch submit-job \
     --profile maf \
@@ -10,6 +12,8 @@ aws batch submit-job \
     --container-overrides command=s3://nextflow-pipelines/nf-binqc,\
 "--fastas","s3://nextflow-pipelines/nf-binqc/test/data"
 ```
+
+## Actual sample command
 
 ```bash
 aws batch submit-job \
