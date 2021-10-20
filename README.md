@@ -1,7 +1,6 @@
-NF-BINQC
-====================
+# NF-BINQC
 
-## Test 
+## Test
 
 ```bash
 aws batch submit-job \
