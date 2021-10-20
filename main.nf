@@ -123,7 +123,7 @@ process BARRNAP {
 
 // CheckM
 process CHECKM {
-  tag 'Running'
+  tag "${params.project}"
 
   container params.docker_container_checkm
 
@@ -156,7 +156,7 @@ process CHECKM {
     qa \\
       -o 2 \\
       --tab_table checkm/lineage.ms \\
-      checkm > checkm-qa.tsv
+      checkm 1> checkm-qa.tsv 2> checkm-qa.log
 
   echo "CheckM" > checkm.version.txt
   checkm &> checkm.version.txt
@@ -167,7 +167,7 @@ process CHECKM {
 
 // GTDBtk
 process GTDBTK {
-    tag 'Running'
+    tag "${params.project}"
 
     container params.docker_container_gtdbtk
 
