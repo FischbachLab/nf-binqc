@@ -1,5 +1,6 @@
 # NF-BINQC
 
+Requires that all the genomes in the `--fastas` location be in fasta format, with the same extension. By default, the pipeline assumes that they all have the extension `fna`. If this is not the case, please use the flag `--ext` to reflect the appropriate extension.
 ## Test
 
 ```bash
@@ -9,7 +10,9 @@ aws batch submit-job \
     --job-queue default-maf-pipelines \
     --job-definition nextflow-production \
     --container-overrides command=s3://nextflow-pipelines/nf-binqc,\
-"--fastas","s3://nextflow-pipelines/nf-binqc/test/data"
+"--fastas","s3://nextflow-pipelines/nf-binqc/test/data",\
+"--project","00_Test",\
+"--ext","fna"
 ```
 
 ## Actual sample command
