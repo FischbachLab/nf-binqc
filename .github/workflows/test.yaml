@@ -1,0 +1,18 @@
+name: nf-binqc Continuous Integration
+
+on: [push, pull_request]
+
+jobs:
+  complete_workflow:
+    runs-on: ubuntu-latest
+    env:
+      NXF_ANSI_LOG: 0
+    steps:
+      - uses: actions/checkout@v1
+      - name: Install Nextflow
+        run: |
+          wget -qO- get.nextflow.io | bash
+          sudo mv nextflow /usr/local/bin/
+      - name: Test bins
+        run: |
+          NXF_VER=20.10.0 nextflow run main.nf -c nextflow.config --fastas test/data --project 00_TEST --outdir test/result/ -with-docker ubuntu:18.04 -w work/ -process.executor local
