@@ -7,9 +7,9 @@ Requires that all the genomes in the `--fastas` location be in fasta format, wit
 ```bash
 aws batch submit-job \
     --job-name nf-binqc-test \
-    --job-queue default-maf-pipelines \
+    --job-queue priority-maf-pipelines \
     --job-definition nextflow-production \
-    --container-overrides command=s3://nextflow-pipelines/nf-binqc,\
+    --container-overrides command=FischbachLab/nf-binqc,\
 "--fastas","s3://nextflow-pipelines/nf-binqc/test/data",\
 "--project","00_Test",\
 "--ext","fna"
@@ -22,7 +22,7 @@ aws batch submit-job \
     --job-name nf-binqc-SCv2_4_20210212 \
     --job-queue priority-maf-pipelines \
     --job-definition nextflow-production \
-    --container-overrides command=s3://nextflow-pipelines/nf-binqc,\
+    --container-overrides command=FischbachLab/nf-binqc,\
 "--fastas","s3://maf-versioned/ninjamap/Index/SCv2_4_20210212/fasta",\
 "--project","SCv2_4_20210212"
 ```
