@@ -1,28 +1,21 @@
-# NF-BINQC
-
-Requires that all the genomes in the `--fastas` location be in fasta format, with the same extension. By default, the pipeline assumes that they all have the extension `fna`. If this is not the case, please use the flag `--ext` to reflect the appropriate extension.
-
-## Test
+NF-BINQC
+====================
 
 ```bash
 aws batch submit-job \
-    --job-name nf-binqc-test \
-    --job-queue priority-maf-pipelines \
+    --job-name nf-binqc-1019-1 \
+    --job-queue default-maf-pipelines \
     --job-definition nextflow-production \
-    --container-overrides command=FischbachLab/nf-binqc,\
-"--fastas","s3://nextflow-pipelines/nf-binqc/test/data",\
-"--project","00_Test",\
-"--ext","fna"
+    --container-overrides command=s3://nextflow-pipelines/nf-binqc,\
+"--fastas","s3://nextflow-pipelines/nf-binqc/test/data"
 ```
-
-## Actual sample command
 
 ```bash
 aws batch submit-job \
     --job-name nf-binqc-SCv2_4_20210212 \
     --job-queue priority-maf-pipelines \
     --job-definition nextflow-production \
-    --container-overrides command=FischbachLab/nf-binqc,\
+    --container-overrides command=s3://nextflow-pipelines/nf-binqc,\
 "--fastas","s3://maf-versioned/ninjamap/Index/SCv2_4_20210212/fasta",\
 "--project","SCv2_4_20210212"
 ```
@@ -40,4 +33,24 @@ Note that updating the code here will *not* update the pipeline automatically.
 ```{bash}
 cd nf-binqc
 aws s3 sync . s3://nextflow-pipelines/nf-binqc --exclude ".git/*" --exclude "test/result/*" --delete --profile maf
+```
+
+## Step1: MITI MCB strain QC example command
+### Note that all assembled genome files are saved in one location and supplied to the --fastas option
+```bash
+aws batch submit-job \
+    --job-name nf-binqc-MCB \
+    --job-queue priority-maf-pipelines \
+    --job-definition nextflow-production \
+    --container-overrides command="s3://nextflow-pipelines/nf-binqc,\
+"--ext", "fasta", \
+"--fastas","s3://genomics-workflow-core/Results/BinQC/MITI-MCB/20221018/fasta",\
+"--project","20221018_207_v2", \
+"--outdir","s3://genomics-workflow-core/Results/BinQC/MITI-MCB" "
+```
+
+## Step2: MITI MCB QC post processing Example 
+### Requires run_binqc_report_wrapper_MITI_MCB.sh and generate_binqc_report.py
+```bash
+run_binqc_report_wrapper_MITI_MCB.sh  local_dir_name db_name
 ```
