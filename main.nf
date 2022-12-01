@@ -41,6 +41,7 @@ if (params.fastas == "") {
  * Each of the following parameters can be specified as command line options
  */
 
+// TODO: @sunitj #1 Use seedfiles
 def fnaGlob = "${params.fastas}/*.${params.ext}"
 log.info"""Searching for file at this location: $fnaGlob""".stripIndent()
 
@@ -221,4 +222,4 @@ process GTDBTK {
 //     .collectFile(name: out)
 
 // TODO: @sunitj
-// replicate bin/qc_wrapper.sh as a Nextflow pipeline 
+// #2 Add report generation as part of the pipeline
