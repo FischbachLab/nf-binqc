@@ -2,6 +2,19 @@
 
 Requires that all the genomes in the `--fastas` location be in fasta format, with the same extension. By default, the pipeline assumes that they all have the extension `fna`. If this is not the case, please use the flag `--ext` to reflect the appropriate extension.
 
+## Seedfile format
+
+- comma delimited
+- two columns with headers: `genome_id`, `genome_path`
+- Example: [test_20221201.seedfile.csv](test/test_20221201.seedfile.csv)
+
+The helper script, [create_seedfile.py](bin/create_seedfile.py), will create the properly formatted seedfile for you if you can point it to an S3 path.
+
+```bash
+cd nf-binqc/bin
+python create_seedfile.py s3://nextflow-pipelines/nf-binqc/test/data fna ../test/test_20221201.seedfile.csv
+```
+
 ## Test
 
 ```bash
