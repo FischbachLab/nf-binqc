@@ -35,8 +35,10 @@ cd nf-binqc
 aws s3 sync . s3://nextflow-pipelines/nf-binqc --exclude ".git/*" --exclude "test/result/*" --delete --profile maf
 ```
 
-## Step1: MITI MCB strain QC example command
-### Note that all assembled genome files are saved in one location and supplied to the --fastas option
+# MITI MCB strain QC example batch job
+## Note that all assembled genome files are saved in one location and supplied to the --fastas option
+### One step submission to generate report. No local post-processing needed any longer.
+
 ```bash
 aws batch submit-job \
     --job-name nf-binqc-MCB \
@@ -49,8 +51,8 @@ aws batch submit-job \
 "--outdir","s3://genomics-workflow-core/Results/BinQC/MITI-MCB" "
 ```
 
-## Step2: MITI MCB QC post processing Example 
-### Requires run_binqc_report_wrapper_MITI_MCB.sh and generate_binqc_report.py
+
+### The QC report can be found in the 05_REPORT directory.
 ```bash
-run_binqc_report_wrapper_MITI_MCB.sh  local_dir_name db_name
+s3://genomics-workflow-core/Results/BinQC/MITI-MCB/20221018_207_v2/05_REPORT/20221018_207_v2.report.csv
 ```

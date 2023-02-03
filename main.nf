@@ -1,5 +1,5 @@
 #!/usr/bin/env nextflow
-nextflow.enable.dsl=1
+
 // If the user uses the --help flag, print the help text below
 params.help = false
 
@@ -76,15 +76,14 @@ process SEQKIT {
 
   container params.docker_container_seqkit
 
-  publishDir "$outputBase/01_Stats/${id}"
+  publishDir "$outputBase/01_SeqKit/${id}"
 
   input:
     tuple val(id), path(assembly) from seqkit_ch
 
   output:
-    path "${id}.seqkit_stats.txt"
+    path "${id}.seqkit_stats.txt" into seqkit_out_ch
     path "*.version.txt"
-    path "${id}.sha256"
 
   script:
   """
@@ -94,8 +93,6 @@ process SEQKIT {
     -j $task.cpus \\
     $assembly 1> ${id}.seqkit_stats.txt
   seqkit version > seqkit.version.txt
-
-  sha256sum $assembly &> ${id}.sha256
   """
 }
 
@@ -105,14 +102,14 @@ process BARRNAP {
 
   container params.docker_container_barrnap
 
-  publishDir "$outputBase/02_RRNA/${id}"
+  publishDir "$outputBase/02_Barrnap/${id}"
 
   input:
     tuple val(id), path(assembly) from barrnap_ch
 
   output:
     path "${id}.rrna.gff"
-    path "${id}.rrna.${params.ext}"
+    path "${id}.rrna.${params.ext}" into barrnap_out_ch
     path "*.version.txt"
 
   script:
@@ -130,15 +127,16 @@ process CHECKM {
 
   container params.docker_container_checkm
 
-  publishDir "$outputBase/03_Contamination"
+  publishDir "$outputBase/03_CheckM"
 
   input:
     path(assembly_dir) from checkm_bindir_ch
 
   output:
     path "checkm-lineage.tsv"
-    path "checkm-qa.tsv"
+    path "checkm-qa.tsv" into checkm_out_ch
     path "*.version.txt"
+
 
   script:
   """
@@ -164,7 +162,7 @@ process CHECKM {
   echo "CheckM" > checkm.version.txt
   checkm &> checkm.version.txt
   """
-// tar cvzf checkm-${params.project}.tar.gz checkm-${params.project} 
+// tar cvzf checkm-${params.project}.tar.gz checkm-${params.project}
 }
 
 
@@ -174,7 +172,7 @@ process GTDBTK {
 
     container params.docker_container_gtdbtk
 
-    publishDir "$outputBase/04_Classification"
+    publishDir "$outputBase/04_GTDBtk"
 
     input:
       path(assembly_dir) from gtdb_bindir_ch
@@ -191,14 +189,14 @@ process GTDBTK {
       // path "*.failed_genomes.tsv"
       path "*.version.txt"
       path "gtdbtk-results/*"
-
+      path  "gtdbtk-results/gtdb.${params.project}.bac120.summary.tsv" into gtdb_out_ch
 
     script:
     // def pplacer_threads = half(${task.cpus})
     """
     export GTDBTK_DATA_PATH="${params.gtdb_db}"
     mkdir -p pplacer_tmp/${params.project}
-  
+
     gtdbtk classify_wf \\
       --genome_dir ${assembly_dir} \\
       --extension ${params.ext} \\
@@ -220,5 +218,23 @@ process GTDBTK {
 // versions_ch
 //     .collectFile(name: out)
 
-// TODO: @sunitj
-// replicate bin/qc_wrapper.sh as a Nextflow pipeline 
+process REPORT {
+    tag "${params.project}"
+
+    container params.docker_container_report
+
+    publishDir "$outputBase/05_REPORT"
+
+input:
+      path 'seqkit_dir/*' from seqkit_out_ch.toSortedList()
+      path 'barrnap_rrna_dir/*' from barrnap_out_ch.toSortedList()
+      path checkm_qa from checkm_out_ch
+      path summary from gtdb_out_ch
+output:
+      path "${params.project}.report.csv"
+script:
+"""
+     bash qc_report_wrapper.sh "${params.project}" seqkit_dir barrnap_rrna_dir $checkm_qa $summary
+"""
+
+}
