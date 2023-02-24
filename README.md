@@ -44,9 +44,9 @@ aws batch submit-job \
     --job-name nf-binqc-MCB \
     --job-queue priority-maf-pipelines \
     --job-definition nextflow-production \
-    --container-overrides command="s3://nextflow-pipelines/nf-binqc,\
+    --container-overrides command="FischbachLab/nf-binqc, \
 "--ext", "fasta", \
-"--fastas","s3://genomics-workflow-core/Results/BinQC/MITI-MCB/20221018/fasta",\
+"--fastas","s3://genomics-workflow-core/Results/BinQC/MITI-MCB/20221018/fasta", \
 "--project","20221018_207_v2", \
 "--outdir","s3://genomics-workflow-core/Results/BinQC/MITI-MCB" "
 ```
