@@ -19,8 +19,8 @@ then
      grep -c '>' ${BARNNAP_DIR}/*.rrna.fasta | sed -e 's/.rrna.fasta:/\t/' -e "s#${BARNNAP_DIR}/##"  >> num_rrna.txt
 # handle a single input file
 else
-     file=`ls barnnap/*.rrna.fasta`
-     trimmed_file1=${file#*/}
+     file=`ls ${BARNNAP_DIR}/*.rrna.fasta`
+     trimmed_file1=${file##*/}
      trimmed_file2=${trimmed_file1%%.*}
      num=`grep -c '>' ${BARNNAP_DIR}/*.rrna.fasta`
      echo -e $trimmed_file2"\t"$num > num_rrna.txt
