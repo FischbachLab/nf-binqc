@@ -3,15 +3,12 @@
 // If the user uses the --help flag, print the help text below
 params.help = false
 
-// Function which prints help message text
 def helpMessage() {
   log.info"""
     QC for MAGs
-
     Required Arguments:
       --fastas              Location where 1 or more fasta files are stored.
       --project             Folder to place analysis outputs (default: )
-
     Options
       --ext                 Extension of the fasta files in the fastas (default:)
       --outdir              Base directory for output files (default: )
@@ -69,6 +66,7 @@ Channel
 
 // checkm_bindir_ch.view()
 // gtdb_bindir_ch.view()
+
 
 // SEQKIT
 process SEQKIT {
@@ -217,13 +215,15 @@ process GTDBTK {
 // // Collect versions; concatenate files; remove duplicates; save
 // versions_ch
 //     .collectFile(name: out)
-
+// Report
 process REPORT {
     tag "${params.project}"
 
     container params.docker_container_report
 
     publishDir "$outputBase/05_REPORT"
+    publishDir "s3://genomics-workflow-core/aws-miti-straindb-us-west-2/aws_glue/assembly_qc/"
+
 
 input:
       path 'seqkit_dir/*' from seqkit_out_ch.toSortedList()
@@ -235,6 +235,7 @@ output:
 script:
 """
      bash qc_report_wrapper.sh "${params.project}" seqkit_dir barrnap_rrna_dir $checkm_qa $summary
+
 """
 
 }

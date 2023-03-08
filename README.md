@@ -52,7 +52,7 @@ aws batch submit-job \
 ```
 
 
-### The QC report can be found in the 05_REPORT directory.
+### The QC report is in the 05_REPORT directory.
 ```bash
 s3://genomics-workflow-core/Results/BinQC/MITI-MCB/20221018_207_v2/05_REPORT/20221018_207_v2.report.csv
 ```
