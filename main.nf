@@ -3,12 +3,16 @@
 // If the user uses the --help flag, print the help text below
 params.help = false
 
+// Function which prints help message text
 def helpMessage() {
   log.info"""
     QC for MAGs
+
     Required Arguments:
       --fastas              Location where 1 or more fasta files are stored.
       --project             Folder to place analysis outputs (default: )
+      --seedfile path       A csv file with headers in the format "Name,Fasta",
+
     Options
       --ext                 Extension of the fasta files in the fastas (default:)
       --outdir              Base directory for output files (default: )
@@ -25,47 +29,93 @@ if (params.help) {
   exit 0
 }
 
-// // Show help message if the user specifies a fasta file but not makedb or db
-if (params.fastas == "") {
-  // Invoke the function above which prints the help message
-  helpMessage()
-  // Exit out and do not run anything else
-  exit 0
+// Check input options
+if (params.fastas && params.seedfile){
+   exit 1, "Input fasta files must be defined using either '--fastas' or '--seedfile' parameter. Please choose one way"
 }
-
-/*
- * Defines the pipeline inputs parameters (giving a default value for each for them)
- * Each of the following parameters can be specified as command line options
- */
-
-def fnaGlob = "${params.fastas}/*.${params.ext}"
-log.info"""Searching for file at this location: $fnaGlob""".stripIndent()
-
-// Exit if the file is empty
-Channel
-  .fromPath(fnaGlob)
-  .ifEmpty { exit 1, 'Cannot find matching fasta file' }
 
 def outputBase = "${params.outdir}/${params.project}"
 
-/*
-  Since the processes are not dependent upon each other, duplicate the channel
-  such that there is one channel for each process
- */
-Channel
-  .fromPath(fnaGlob)
-  .map { it -> tuple(it.baseName, file(it)) }
-  .into { seqkit_ch; barrnap_ch }
+if(params.seedfile){
+    Channel
+          .fromPath(params.seedfile)
+          .ifEmpty { exit 1, "Cannot find any seed file matching: ${params.seedfile}." }
+          .splitCsv(header: ['name', 'file'], sep: ',')
+          .map{ row -> tuple(row.name, file(row.file))}
+          .into {  barrnap_ch; copy_to_dir  }
 
-// Pass the entire directory
-Channel
-  .fromPath( "${params.fastas}", type: 'dir')
-  // .set{checkm_bindir_ch}
-  // .set{gtdb_bindir_ch}
-  .into { gtdb_bindir_ch; checkm_bindir_ch}
+          process copy_fastas {
+              tag "$id"
+
+              //storeDir './files'
+              //stageOutMode 'copy'
+              publishDir "${params.outdir}/${params.project}/00_Fasta/"
+
+              container params.docker_container_seqkit
+
+              input:
+              tuple val(id), path(assembly) from copy_to_dir
+
+              output:
+              //path "${id}.${params.ext}" into fasta_dir_ch
+              //path ${id}.${params.ext} into fasta_dir_ch
+              tuple val(id), path("${id}.${params.ext}") into seqkit_ch
+
+              script:
+              """
+              cp $assembly ${id}.${params.ext}
+              """
+          }
+          Channel
+            .fromPath("${params.outdir}/${params.project}/00_Fasta/", type: 'dir')
+            .into { gtdb_bindir_ch; checkm_bindir_ch}
+
+} else {
+
+    // // Show help message if the user specifies a fasta file but not makedb or db
+     if (params.fastas == "") {
+      // Invoke the function above which prints the help message
+      helpMessage()
+      // Exit out and do not run anything else
+      exit 0
+    }
+
+    /*
+     * Defines the pipeline inputs parameters (giving a default value for each for them)
+     * Each of the following parameters can be specified as command line options
+     */
+
+    def fnaGlob = "${params.fastas}/*.${params.ext}"
+    log.info"""Searching for file at this location: $fnaGlob""".stripIndent()
+
+    // Exit if the file is empty
+    Channel
+      .fromPath(fnaGlob)
+      .ifEmpty { exit 1, 'Cannot find matching fasta file' }
+
+
+
+    /*
+      Since the processes are not dependent upon each other, duplicate the channel
+      such that there is one channel for each process
+     */
+    Channel
+      .fromPath(fnaGlob)
+      .map { it -> tuple(it.baseName, file(it)) }
+      .into { seqkit_ch; barrnap_ch }
+
+    // Pass the entire directory
+    Channel
+      .fromPath( "${params.fastas}", type: 'dir')
+      // .set{checkm_bindir_ch}
+      // .set{gtdb_bindir_ch}
+      .into { gtdb_bindir_ch; checkm_bindir_ch}
+}
 
 // checkm_bindir_ch.view()
 // gtdb_bindir_ch.view()
+
+// Copy genome files into a directory that is used as a permanent cache
 
 
 // SEQKIT
@@ -224,7 +274,6 @@ process REPORT {
     publishDir "$outputBase/05_REPORT"
     publishDir "s3://genomics-workflow-core/aws-miti-straindb-us-west-2/aws_glue/assembly_qc/"
 
-
 input:
       path 'seqkit_dir/*' from seqkit_out_ch.toSortedList()
       path 'barrnap_rrna_dir/*' from barrnap_out_ch.toSortedList()
@@ -235,7 +284,6 @@ output:
 script:
 """
      bash qc_report_wrapper.sh "${params.project}" seqkit_dir barrnap_rrna_dir $checkm_qa $summary
-
 """
 
 }

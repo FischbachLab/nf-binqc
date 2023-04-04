@@ -6,7 +6,7 @@ aws batch submit-job \
     --job-name nf-binqc-1019-1 \
     --job-queue default-maf-pipelines \
     --job-definition nextflow-production \
-    --container-overrides command=s3://nextflow-pipelines/nf-binqc,\
+    --container-overrides command=FischbachLab/nf-binqc,\
 "--fastas","s3://nextflow-pipelines/nf-binqc/test/data"
 ```
 
@@ -15,7 +15,7 @@ aws batch submit-job \
     --job-name nf-binqc-SCv2_4_20210212 \
     --job-queue priority-maf-pipelines \
     --job-definition nextflow-production \
-    --container-overrides command=s3://nextflow-pipelines/nf-binqc,\
+    --container-overrides command=FischbachLab/nf-binqc,\
 "--fastas","s3://maf-versioned/ninjamap/Index/SCv2_4_20210212/fasta",\
 "--project","SCv2_4_20210212"
 ```
@@ -36,10 +36,18 @@ aws s3 sync . s3://nextflow-pipelines/nf-binqc --exclude ".git/*" --exclude "tes
 ```
 
 # MITI MCB strain QC example batch job
-## Note that all assembled genome files are saved in one location and supplied to the --fastas option
 ### One step submission to generate report. No local post-processing needed any longer.
+### Input fasta files must be defined using either '--fastas' or '--seedfile' parameter.
+### Note that all assembled genome files are saved in one location and supplied to the --fastas option or supply a seedfile defining the genome name and s3 path in a csv file without headers. Below is an example seedfile.  
 
-```bash
+```
+SH0001342-00095,s3://genomics-workflow-core/Results/HybridAssembly/MITI-MCB/SH0001342-00095/UNICYCLER/assembly.fasta
+SH0001372-00039,s3://genomics-workflow-core/Results/HybridAssembly/MITI-MCB/SH0001372-00039/UNICYCLER/assembly.fasta
+```
+
+#### The batch submission example using --fastas option
+
+```{bash}
 aws batch submit-job \
     --job-name nf-binqc-MCB \
     --job-queue priority-maf-pipelines \
@@ -51,8 +59,21 @@ aws batch submit-job \
 "--outdir","s3://genomics-workflow-core/Results/BinQC/MITI-MCB" "
 ```
 
+#### The batch submission example using --seedfile option
 
-### The QC report is in the 05_REPORT directory.
-```bash
+```{bash}
+aws batch submit-job \
+    --job-name nf-binqc-MCB \
+    --job-queue priority-maf-pipelines \
+    --job-definition nextflow-production \
+    --container-overrides command="FischbachLab/nf-binqc, \
+"--ext", "fasta", \
+"--seedfile", "s3://genomics-workflow-core/Results/BinQC/TEST/20221018_207_v2.seedfile.csv"
+"--project","20221018_207_v2", \
+"--outdir","s3://genomics-workflow-core/Results/BinQC/MITI-MCB" "
+```
+
+### The QC report is saved in the 05_REPORT directory.
+```
 s3://genomics-workflow-core/Results/BinQC/MITI-MCB/20221018_207_v2/05_REPORT/20221018_207_v2.report.csv
 ```
