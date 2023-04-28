@@ -36,6 +36,25 @@ if (params.fastas && params.seedfile){
 
 def outputBase = "${params.outdir}/${params.project}"
 
+// save a copy of the seedfile
+if(params.seedfile){
+    process save_seedfile {
+
+        container params.docker_container_report
+        publishDir "s3://genomics-workflow-core/aws-miti-straindb-us-west-2/aws_glue/qc_seedfiles/"
+
+        input:
+        file seed from  Channel.fromPath(params.seedfile)
+        output:
+        file "${seed}"
+
+       script:
+       """
+        ls $seed
+       """
+    }
+}
+
 if(params.seedfile){
     Channel
           .fromPath(params.seedfile)
@@ -63,7 +82,13 @@ if(params.seedfile){
 
               script:
               """
-              cp $assembly ${id}.${params.ext}
+              if [[ $assembly = ${id}.${params.ext} ]]
+              then
+              	echo "keep files"
+              else
+                echo "copy files"
+              	cp $assembly ${id}.${params.ext}
+              fi
               """
           }
           Channel
