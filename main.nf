@@ -88,6 +88,7 @@ if(params.seedfile){
               else
                 echo "copy files"
               	cp $assembly ${id}.${params.ext}
+		sleep 1
               fi
               """
           }
