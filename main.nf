@@ -214,6 +214,7 @@ process CHECKM {
 
   script:
   """
+  sleep 30
   checkm data setRoot ${params.checkm_db}
   checkm \\
     lineage_wf \\
@@ -268,6 +269,7 @@ process GTDBTK {
     script:
     // def pplacer_threads = half(${task.cpus})
     """
+    sleep 30
     export GTDBTK_DATA_PATH="${params.gtdb_db}"
     mkdir -p pplacer_tmp/${params.project}
 
