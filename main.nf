@@ -88,14 +88,18 @@ if(params.seedfile){
               else
                 echo "copy files"
               	cp $assembly ${id}.${params.ext}
-		sleep 1
               fi
               """
           }
           Channel
             .fromPath("${params.outdir}/${params.project}/00_Fasta/", type: 'dir')
             .into { gtdb_bindir_ch; checkm_bindir_ch}
-
+/*
+Channel
+.from (seqkit_ch)
+.list (map(lambda x: x[0], it))
+into(gtdb_bindir_ch)
+*/
 } else {
 
     // // Show help message if the user specifies a fasta file but not makedb or db
@@ -214,7 +218,6 @@ process CHECKM {
 
   script:
   """
-  sleep 30
   checkm data setRoot ${params.checkm_db}
   checkm \\
     lineage_wf \\
@@ -269,7 +272,6 @@ process GTDBTK {
     script:
     // def pplacer_threads = half(${task.cpus})
     """
-    sleep 30
     export GTDBTK_DATA_PATH="${params.gtdb_db}"
     mkdir -p pplacer_tmp/${params.project}
 
@@ -279,7 +281,8 @@ process GTDBTK {
       --prefix gtdb.${params.project} \\
       --out_dir gtdbtk-results \\
       --cpus $task.cpus \\
-      --pplacer_cpus ${params.pplacer_threads}
+      --pplacer_cpus ${params.pplacer_threads} \\
+      --skip_ani_screen
 
     echo "GTDBtk" > gtdbtk.version.txt
     gtdbtk --version | sed "s/gtdbtk: version //; s/ Copyright.*//" >> gtdbtk.version.txt
