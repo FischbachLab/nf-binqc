@@ -85,7 +85,7 @@ aws batch submit-job \
 05_REPORT/
 06_TREE/
 ```
-### Example: The QC report and tree file are saved in the 05_REPORT and 06_TREE directories, respectively.
+### Example: The QC report and pdf tree files are saved in the 05_REPORT and 06_TREE directories, respectively.
 ```
 s3://genomics-workflow-core/Results/BinQC/MITI-MCB/20221018_207_v2/05_REPORT/20221018_207_v2.report.csv
 s3://genomics-workflow-core/Results/BinQC/MITI-MCB/20221018_207_v2/06_TREE/20221018_207_v2.bestTree.pdf
@@ -93,5 +93,5 @@ s3://genomics-workflow-core/Results/BinQC/MITI-MCB/20221018_207_v2/06_TREE/20221
 
 ### Reference: Generating the Whole Genome Trees
 ```
-(kSNP4.1)[https://pubmed.ncbi.nlm.nih.gov/37948764/] is a k-mer based SNP calling tool that can be used to generate whole genome trees.
+[kSNP4.1](https://pubmed.ncbi.nlm.nih.gov/37948764/) is a k-mer based SNP calling tool that can be used to generate whole genome trees.
 ```
