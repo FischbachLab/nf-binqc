@@ -10,13 +10,14 @@ def helpMessage() {
     QC for MAGs
 
     Required Arguments:
-      --fastas              Location where 1 or more fasta files are stored.
-      --project             Folder to place analysis outputs (default: )
+      --fastas   path       Location where 1 or more fasta files are stored.
+      --project  value      Folder to place analysis outputs (default: )
       --seedfile path       A csv file with headers in the format "Name,Fasta",
 
     Options
-      --ext                 Extension of the fasta files in the fastas (default:)
-      --outdir              Base directory for output files (default: )
+      --ext       value     Extension of the fasta files in the fastas (default:)
+      --outdir    path      Base directory for output files (default: )
+      --tree  <true|false>  Optional whether a tree is built or not (default:false)
     """.stripIndent()
 }
 
@@ -54,32 +55,42 @@ def outputBase = "${params.outdir}/${params.project}"
        """
     }
 
+    process dummy {
+
+        container params.docker_container_seqkit
+
+        input:
+        path ('in_dir')
+
+        output:
+
+        script:
+        """
+        ls -l in_dir
+        """
+    }
 
     process copy_fastas {
         tag "$id"
 
         //storeDir './files'
         //stageOutMode 'copy'
-        publishDir "${params.outdir}/${params.project}/00_Fasta/"
+        publishDir "$outputBase"
 
         container params.docker_container_seqkit
 
         input:
-        tuple val(id), path(assembly) from copy_to_dir
+        tuple val(id), path(assembly)
 
         output:
-        path "${id}.${params.ext}" into fasta_dir_ch
-        tuple val(id), path("${id}.${params.ext}") into seqkit_ch
+        //path "00_Fasta/${id}.${params.ext}"
+        path "00_Fasta", emit: copy_fastas_ch
+        //tuple val(id), path("${id}.${params.ext}")
 
         script:
         """
-        if [[ $assembly = ${id}.${params.ext} ]]
-        then
-        	echo "keep files"
-        else
-          echo "copy files"
-        	cp $assembly ${id}.${params.ext}
-        fi
+        mkdir 00_Fasta
+        cp $assembly 00_Fasta/${id}.${params.ext}
         """
     }
 
@@ -123,13 +134,13 @@ process BARRNAP {
 
   output:
     path "${id}.rrna.gff"
-    path "${id}.rrna.${params.ext}", emit: barrnap_out_ch
+    path "${id}.rrna.fasta", emit: barrnap_out_ch
     path "*.version.txt"
 
   script:
   """
     barrnap --threads $task.cpus \\
-            -o ${id}.rrna.${params.ext} \\
+            -o ${id}.rrna.fasta \\
             $assembly > ${id}.rrna.gff
     barrnap -v > barnap.version.txt
   """
@@ -144,7 +155,7 @@ process CHECKM {
   publishDir "$outputBase/03_CheckM"
 
   input:
-    path 'assembly_dir/*'
+    path 'assembly_dir'
 
   output:
     path "checkm-lineage.tsv"
@@ -189,7 +200,7 @@ process GTDBTK {
     publishDir "$outputBase/04_GTDBtk"
 
     input:
-      path 'assembly_dir/*'
+      path 'assembly_dir'
 
     output:
       // path "*.summary.tsv"
@@ -242,8 +253,8 @@ process REPORT {
     publishDir "s3://genomics-workflow-core/aws-miti-straindb-us-west-2/aws_glue/assembly_qc/"
 
 input:
-      path 'seqkit_dir/*'
-      path 'barrnap_rrna_dir/*'
+      path "seqkit_dir/*"
+      path "barrnap_rrna_dir/*"
       path checkm_qa
       path summary
 output:
@@ -255,6 +266,50 @@ script:
 
 }
 
+
+process kSNP4_tree {
+    tag "${params.project}"
+
+    errorStrategy 'ignore'
+    container params.docker_container_tree
+
+    publishDir "$outputBase/06_TREE"
+
+input:
+      path "genomes"
+
+output:
+      file "kSNP4_output/tree.SNPs_all.ML.tre"
+script:
+
+"""
+  MakeKSNP4infile -indir genomes -outfile genomes.list
+  kSNP4 -in genomes.list -k 21 -ML -outdir kSNP4_output
+"""
+
+}
+
+/*
+ Write the tree in pdf using figtree
+*/
+ process write_tree_in_pdf {
+     tag "${params.project}"
+
+     container params.docker_container_figtree
+
+     publishDir "$outputBase/06_TREE", mode:'copy', pattern: '*.pdf'
+
+     input:
+     file tree
+
+     output:
+     file "*.pdf"
+
+     script:
+     """
+     figtree -graphic PDF "$tree" "${params.project}".bestTree.pdf
+     """
+ }
 
 workflow {
 
@@ -271,10 +326,14 @@ workflow {
     // Save a copy of input fasta files
     seqkit_barrnap_ch | copy_fastas
 
-    gtdb_checkm_bindir_ch = Channel
-           .fromPath(params.seedfile)
-           .splitCsv(header: ['name', 'file'], sep: ',')
-           .map{ row -> file(row.file)}
+    copy_fastas.out.copy_fastas_ch | dummy
+    gtdb_checkm_bindir_ch = copy_fastas.out.copy_fastas_ch
+    // tmp fix
+    gtdb_checkm_bindir_ch = Channel.fromPath("$outputBase/00_Fasta")
+    //gtdb_checkm_bindir_ch = Channel
+    //       .fromPath(params.seedfile)
+    //       .splitCsv(header: ['name', 'file'], sep: ',')
+    //       .map{ row -> file(row.file)}
 
   } else {
 
@@ -308,7 +367,7 @@ workflow {
 
       // Pass the entire directory
       gtdb_checkm_bindir_ch = Channel
-        .fromPath( "${params.fastas}", type: 'dir')
+        .fromPath(params.fastas)
 
   }
 
@@ -317,5 +376,12 @@ workflow {
         seqkit_barrnap_ch | BARRNAP
         gtdb_checkm_bindir_ch | CHECKM
         gtdb_checkm_bindir_ch | GTDBTK
-        REPORT( SEQKIT.out.seqkit_out_ch, BARRNAP.out.barrnap_out_ch, CHECKM.out.checkm_out_ch, GTDBTK.out.gtdb_out_ch)
+        REPORT( SEQKIT.out.seqkit_out_ch.toSortedList(), BARRNAP.out.barrnap_out_ch.toSortedList(), CHECKM.out.checkm_out_ch, GTDBTK.out.gtdb_out_ch)
+
+
+    if (params.tree){
+        gtdb_checkm_bindir_ch | kSNP4_tree
+        kSNP4_tree.out | write_tree_in_pdf
+
+    }
 }
