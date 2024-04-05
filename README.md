@@ -83,7 +83,8 @@ aws batch submit-job \
 03_CheckM/
 04_GTDBtk/
 05_REPORT/
-06_TREE/
+06_GUNC/
+07_TREE/ (optional)
 ```
 ### Example: The QC report and pdf tree files are saved in the 05_REPORT and 06_TREE directories, respectively.
 ```
@@ -91,5 +92,9 @@ s3://genomics-workflow-core/Results/BinQC/MITI-MCB/20221018_207_v2/05_REPORT/202
 s3://genomics-workflow-core/Results/BinQC/MITI-MCB/20221018_207_v2/06_TREE/20221018_207_v2.bestTree.pdf
 ```
 
-### Reference: Generating the Whole Genome Trees
+### Reference1: Generating the Whole Genome Trees
 [kSNP4.1](https://pubmed.ncbi.nlm.nih.gov/37948764/) is a k-mer based SNP calling tool that can be used to generate whole genome trees.
+
+### Reference2: GUNC
+[GUNC](https://github.com/grp-bork/gunc) is a Python package for Detection of chimerism and contamination in prokaryotic genomes.
+[GUNC Documentation](https://grp-bork.embl-community.io/gunc/)
