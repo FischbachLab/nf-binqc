@@ -5,6 +5,7 @@ SEQKIT_DIR="${2}"
 BARNNAP_DIR="${3}"
 CHECKM="${4}"
 GTDB="${5}"
+GUNC="${6}"
 
 # Get fasta stat file
 for i in ${SEQKIT_DIR}/*.seqkit_stats.txt;
@@ -28,4 +29,4 @@ fi
 
 
 # Run report
-binqc_report.py $PROJECT $CHECKM $GTDB fasta_stats.txt num_rrna.txt
+binqc_report.py $PROJECT $CHECKM $GTDB fasta_stats.txt num_rrna.txt $GUNC

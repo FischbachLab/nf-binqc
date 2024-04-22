@@ -11,6 +11,7 @@ checkm_summary_file = sys.argv[2]
 gtdbtk_summary_file = sys.argv[3]
 genome_summary_file = sys.argv[4]
 rrna_summary_file = sys.argv[5]
+gunc_summary_file = sys.argv[6]
 
 # Output file name
 report_csv = f'{dbname}.report.csv'
@@ -52,6 +53,12 @@ def parse_gtdb_outputs(gtdb_output):
     keep_col = ['bin_name','classification','classification_method','closest_ref', 'ani', 'aln_frac','msa_percent','red_value', 'note', 'warnings']
     return df[keep_col].set_index('bin_name')
 
+# GUNC
+def parse_gunc_outputs(gunc_output):
+    df = pd.read_table(gunc_output).rename(columns={"genome":"bin_name", "pass.GUNC":"pass_GUNC"} )
+    keep_col = ['bin_name','pass_GUNC']
+    return df[keep_col].set_index('bin_name')
+
 #rRna
 def parse_rrna_stats(genes_file):
     return pd.read_table(genes_file, names=['bin_name','num_rRNAs'],
@@ -84,11 +91,15 @@ if __name__ == '__main__':
 
     print('Parsing GTDBtk output ...')
     gtdb_df = parse_gtdb_outputs(gtdbtk_summary_file)
+    
     print('Parsing Seqkit stats ...')
     bin_stats_df = parse_seqkit_stats(genome_summary_file)
 
     print('Parsing Barrnap output ...')
     rrna_df = parse_rrna_stats(rrna_summary_file)
+    
+    print('Parsing GUNC output ...')
+    gunc_df = parse_gunc_outputs(gunc_summary_file)
 
     print(rrna_df)
 
@@ -102,7 +113,8 @@ if __name__ == '__main__':
     bins_df = pd.concat([bin_stats_df,
                          gtdb_df,
                          checkm_df,
-                         rrna_df],
+                         rrna_df,
+                         gunc_df],
                          axis=1, sort=False).sort_values('checkm_score', ascending = True).reset_index().rename(columns={'index':'bin_name'})
     print('Writing output ...')
     bins_df.to_csv(report_csv, index = False)

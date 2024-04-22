@@ -159,12 +159,13 @@ input:
       path "seqkit_dir/*"
       path "barrnap_rrna_dir/*"
       path checkm_qa
-      path summary
+      path gtdb_summary
+      path gunc_summary
 output:
       path "${params.project}.report.csv"
 script:
 """
-     bash qc_report_wrapper.sh "${params.project}" seqkit_dir barrnap_rrna_dir $checkm_qa $summary
+     bash qc_report_wrapper.sh "${params.project}" seqkit_dir barrnap_rrna_dir $checkm_qa $gtdb_summary $gunc_summary
 """
 
 }
@@ -181,7 +182,7 @@ input:
       path "genomes"
 
 output:
-      file "gunc_results/GUNC.progenomes_2.1.maxCSS_level.tsv"
+      path "gunc_results/GUNC.progenomes_2.1.maxCSS_level.tsv", emit: gunc_out_ch
 script:
 
 """

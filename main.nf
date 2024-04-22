@@ -1,7 +1,7 @@
 #!/usr/bin/env nextflow
 nextflow.enable.dsl=2
 include {save_seedfile; dummy; copy_fastas } from './modules/house_keeping'
-include { SEQKIT; BARRNAP; CHECKM; GTDBTK; REPORT; GUNC;kSNP4_tree; write_tree_in_pdf} from './modules/bin_qc'
+include { SEQKIT; BARRNAP; CHECKM; GTDBTK; REPORT; GUNC; kSNP4_tree; write_tree_in_pdf} from './modules/bin_qc'
 
 // If the user uses the --help flag, print the help text below
 params.help = false
@@ -99,17 +99,14 @@ workflow {
       // Pass the entire directory
       gtdb_checkm_bindir_ch = Channel
         .fromPath(params.fastas)
-
   }
-
-
         seqkit_barrnap_ch |  SEQKIT
         seqkit_barrnap_ch | BARRNAP
         gtdb_checkm_bindir_ch | CHECKM
         gtdb_checkm_bindir_ch | GTDBTK
-        REPORT( SEQKIT.out.seqkit_out_ch.toSortedList(), BARRNAP.out.barrnap_out_ch.toSortedList(), CHECKM.out.checkm_out_ch, GTDBTK.out.gtdb_out_ch)
         gtdb_checkm_bindir_ch | GUNC
-
+        REPORT(SEQKIT.out.seqkit_out_ch.toSortedList(), BARRNAP.out.barrnap_out_ch.toSortedList(), CHECKM.out.checkm_out_ch, GTDBTK.out.gtdb_out_ch, GUNC.out.gunc_out_ch)
+        
     if (params.tree){
         gtdb_checkm_bindir_ch | kSNP4_tree
         kSNP4_tree.out | write_tree_in_pdf
