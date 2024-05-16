@@ -56,7 +56,7 @@ aws batch submit-job \
 "--ext", "fasta", \
 "--fastas","s3://genomics-workflow-core/Results/BinQC/MITI-MCB/20221018/fasta", \
 "--project","20221018_207_v2", \
-"--tree","tree", \
+"--tree","true", \
 "--outdir","s3://genomics-workflow-core/Results/BinQC/MITI-MCB" "
 ```
 
