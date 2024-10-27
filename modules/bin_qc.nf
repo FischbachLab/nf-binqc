@@ -21,6 +21,7 @@ process SEQKIT {
     -j $task.cpus \\
     $assembly 1> ${id}.seqkit_stats.txt
   seqkit version > seqkit.version.txt
+  sed -i "s/^${id}.${params.ext}/${id}/" ${id}.seqkit_stats.txt
   """
 }
 
@@ -58,7 +59,7 @@ process CHECKM {
   publishDir "${params.outdir}/${params.project}/03_CheckM"
 
   input:
-    path 'assembly_dir'
+    path 'assembly_dir/*'
 
   output:
     path "checkm-lineage.tsv"
@@ -103,7 +104,7 @@ process GTDBTK {
     publishDir "${params.outdir}/${params.project}/04_GTDBtk"
 
     input:
-      path 'assembly_dir'
+      path 'assembly_dir/*'
 
     output:
       // path "*.summary.tsv"
@@ -179,7 +180,7 @@ script:
     publishDir "${params.outdir}/${params.project}/06_GUNC"
 
 input:
-      path "genomes"
+      path "genomes/*"
 
 output:
       path "gunc_results/GUNC.progenomes_2.1.maxCSS_level.tsv", emit: gunc_out_ch

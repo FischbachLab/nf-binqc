@@ -52,19 +52,17 @@ workflow {
             .fromPath(params.seedfile)
             .ifEmpty { exit 1, "Cannot find any seed file matching: ${params.seedfile}." }
             .splitCsv(header: ['name', 'file'], sep: ',')
-            .map{ row -> tuple(row.name, file(row.file))}
+            .map{ row -> tuple(row.name, row.file)}
 
     // Save a copy of input fasta files
     seqkit_barrnap_ch | copy_fastas
 
-    copy_fastas.out.copy_fastas_ch | dummy
-    gtdb_checkm_bindir_ch = copy_fastas.out.copy_fastas_ch
-    // tmp fix
-    gtdb_checkm_bindir_ch = Channel.fromPath("$outputBase/00_Fasta")
-    //gtdb_checkm_bindir_ch = Channel
-    //       .fromPath(params.seedfile)
-    //       .splitCsv(header: ['name', 'file'], sep: ',')
-    //       .map{ row -> file(row.file)}
+    copy_fastas.out.copy_fastas_ch.toSortedList() | dummy
+
+    seqkit_barrnap_ch = copy_fastas.out.copy_fastas_ch
+        .map { it -> tuple(it.baseName, file(it)) }
+
+    gtdb_checkm_bindir_ch = copy_fastas.out.copy_fastas_ch.toSortedList()
 
   } else {
 

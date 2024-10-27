@@ -20,7 +20,7 @@
         container params.docker_container_seqkit
 
         input:
-        path ('in_dir')
+        path "in_dir/*"
 
         output:
 
@@ -35,7 +35,7 @@
 
         //storeDir './files'
         //stageOutMode 'copy'
-        publishDir "${params.outdir}/${params.project}"
+        publishDir "${params.outdir}/${params.project}/00_Fasta"
 
         container params.docker_container_seqkit
 
@@ -43,13 +43,14 @@
         tuple val(id), path(assembly)
 
         output:
-        //path "00_Fasta/${id}.${params.ext}"
-        path "00_Fasta", emit: copy_fastas_ch
+        path "${id}.${params.ext}", emit: copy_fastas_ch
+        //path "00_Fasta", emit: copy_fastas_ch
         //tuple val(id), path("${id}.${params.ext}")
 
         script:
         """
         mkdir 00_Fasta
-        cp $assembly 00_Fasta/${id}.${params.ext}
+        cp $assembly ${id}.${params.ext}
+        sleep 30
         """
     }
