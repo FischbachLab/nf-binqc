@@ -176,7 +176,6 @@ script:
     tag "${params.project}"
 
     container params.docker_container_gunc
-
     publishDir "${params.outdir}/${params.project}/06_GUNC"
 
 input:
@@ -193,7 +192,7 @@ script:
 
 }
 
-// Generate whole genome
+// Generate whole genome phylogenetic tree
 process kSNP4_tree {
     tag "${params.project}"
 
@@ -202,7 +201,7 @@ process kSNP4_tree {
     publishDir "${params.outdir}/${params.project}/07_TREE"
 
 input:
-    path "genomes"
+    path "genomes/*"
 
 output:
     file "kSNP4_output/tree.SNPs_all.ML.tre"
