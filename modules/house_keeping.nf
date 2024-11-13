@@ -50,7 +50,10 @@
         script:
         """
         mkdir 00_Fasta
-        cp $assembly ${id}.${params.ext}
+        if [ ! -f "${id}.${params.ext}" ]; then 
+            cp $assembly ${id}.${params.ext}
+        fi
+       
         sleep 30
         """
     }
