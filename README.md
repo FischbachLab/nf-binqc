@@ -68,12 +68,17 @@ aws batch submit-job \
     --job-queue priority-maf-pipelines \
     --job-definition nextflow-production \
     --container-overrides command="FischbachLab/nf-binqc, \
-"--ext", "fasta", \
 "--seedfile", "s3://genomics-workflow-core/Results/BinQC/TEST/20221018_207_v2.seedfile.csv"
 "--project","20221018_207_v2", \
 "--tree","true", \
 "--outdir","s3://genomics-workflow-core/Results/BinQC/MITI-MCB" "
 ```
+
+**NOTE:** 
+
+- The seedfile is a header-less, two-column csv file. First column should be the name of the sample and the second the s3path to the file.
+- When using this option the `--ext` will be ignored.
+
 
 #### The structure of the output directory
 ```
