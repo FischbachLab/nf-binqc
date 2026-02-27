@@ -4,7 +4,7 @@ import os
 import sys
 import numpy as np
 import pandas as pd
-
+import re
 
 dbname = sys.argv[1]
 checkm_summary_file = sys.argv[2]
@@ -67,7 +67,7 @@ def parse_rrna_stats(genes_file):
 # SeqKit
 def parse_seqkit_stats(stats_file):
     df = pd.read_table(stats_file, names=['file', 'format', 'type', 'num_seqs', 'sum_len', 'min_len', 'avg_len', 'max_len'])
-    df['bin_name'] = df['file'].apply(lambda x: os.path.basename(os.path.splitext(x)[0]))
+    df['bin_name'] = df['file'].apply(lambda x: re.sub(r'\.(fa|fasta)$', '', os.path.basename(x))) #lambda x: os.path.basename(os.path.splitext(x)[0]))
     keep_cols=['bin_name','num_seqs','sum_len','min_len','avg_len','max_len']
     return df[keep_cols].set_index('bin_name')
 
