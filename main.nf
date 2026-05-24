@@ -96,7 +96,9 @@ workflow {
 
       // Pass the entire directory
       gtdb_checkm_bindir_ch = Channel
-        .fromPath(params.fastas)
+        .fromPath(fnaGlob, checkIfExists: true)
+        .ifEmpty { error "No genome files found in: ${params.fastas}" }
+        .collect()
   }
         seqkit_barrnap_ch |  SEQKIT
         seqkit_barrnap_ch | BARRNAP
